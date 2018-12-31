@@ -19,6 +19,7 @@ from edx.analytics.tasks.common.mapreduce import MapReduceJobTask, MapReduceJobT
 from edx.analytics.tasks.common.mysql_load import MysqlInsertTask, MysqlInsertTaskMixin
 from edx.analytics.tasks.common.pathutil import PathSetTask
 from edx.analytics.tasks.util.decorators import workflow_entry_point
+from edx.analytics.tasks.util.record import IntegerField, Record, StringField, FloatField
 from edx.analytics.tasks.util.url import ExternalURL, get_target_from_url, url_path_join
 
 log = logging.getLogger(__name__)
@@ -775,6 +776,22 @@ class AnswerDistributionOneFilePerCourseTask(AnswerDistributionDownstreamMixin, 
         return [html5lib, six]
 
 
+class AnswerDistributionRecord(Record):
+    """Answer distribution table representation."""
+    course_id = StringField(length=255, nullable=False, description='The course the learner is enrolled in.')
+    module_id = StringField(length=255, nullable=False, description='')
+    part_id = StringField(length=255, nullable=False, description='')
+    correct = IntegerField(nullable=False, description='')
+    first_response_count = IntegerField(nullable=False, description='')
+    last_response_count = IntegerField(nullable=False, description='')
+    value_id = StringField(length=255, description='')
+    answer_value_text = StringField(length=500, description='')
+    answer_value_numeric = FloatField(description='')
+    variant = IntegerField(description='')
+    problem_display_name = StringField(length=500, description='')
+    question_text = StringField(length=500, description='')
+
+
 class InsertToMysqlAnswerDistributionTableBase(MysqlInsertTask):
     """
     Define answer_distribution table.
@@ -809,20 +826,7 @@ class InsertToMysqlAnswerDistributionTableBase(MysqlInsertTask):
 
     @property
     def columns(self):
-        return [
-            ('course_id', 'VARCHAR(255) NOT NULL'),
-            ('module_id', 'VARCHAR(255) NOT NULL'),
-            ('part_id', 'VARCHAR(255) NOT NULL'),
-            ('correct', 'TINYINT(1) NOT NULL'),
-            ('first_response_count', 'INT(11) NOT NULL'),
-            ('last_response_count', 'INT(11) NOT NULL'),
-            ('value_id', 'VARCHAR(255)'),
-            ('answer_value_text', 'LONGTEXT'),
-            ('answer_value_numeric', 'DOUBLE'),
-            ('variant', 'INT(11)'),
-            ('problem_display_name', 'LONGTEXT'),
-            ('question_text', 'LONGTEXT'),
-        ]
+        return AnswerDistributionRecord.get_sql_schema()
 
     @property
     def indexes(self):
