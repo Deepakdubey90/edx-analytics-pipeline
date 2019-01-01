@@ -9,16 +9,15 @@ import luigi
 from edx.analytics.tasks.common.vertica_load import VerticaCopyTask, VerticaCopyTaskMixin
 from edx.analytics.tasks.enterprise.enterprise_enrollments import EnterpriseEnrollmentRecord
 from edx.analytics.tasks.enterprise.enterprise_user import EnterpriseUserRecord
-from edx.analytics.tasks.insights.answer_dist import AnswerDistributionRecord
 from edx.analytics.tasks.insights.enrollments import EnrollmentDailyRecord, EnrollmentByBirthYearRecord, \
     EnrollmentByEducationLevelRecord, EnrollmentByGenderRecord, EnrollmentByModeRecord, CourseSummaryEnrollmentRecord, \
     CourseProgramMetadataRecord
-from edx.analytics.tasks.insights.location_per_course import LastCountryOfUserRecord, LastCountryPerCourseRecord
+from edx.analytics.tasks.insights.location_per_course import LastCountryPerCourseRecord
 from edx.analytics.tasks.insights.module_engagement import ModuleEngagementRecord, \
     ModuleEngagementSummaryMetricRangeRecord
 from edx.analytics.tasks.insights.user_activity import CourseActivityRecord
 from edx.analytics.tasks.util.hive import WarehouseMixin
-from edx.analytics.tasks.util.url import ExternalURL
+from edx.analytics.tasks.util.url import ExternalURL, url_path_join
 
 log = logging.getLogger(__name__)
 
@@ -34,10 +33,18 @@ class LoadHiveTableToVertica(WarehouseMixin, VerticaCopyTask):
     column_list = luigi.ListParameter(
         description='A list of column names to be included.'
     )
+    load_data_from_partition = luigi.Parameter(
+        default=True,
+        description='Boolean to indicate if data will be loaded from hive partition.'
+    )
 
     @property
     def insert_source_task(self):
-        return ExternalURL(url=self.hive_partition_path(self.table_name, self.date))
+        if self.load_data_from_partition:
+            url = self.hive_partition_path(self.table_name, self.date)
+        else:
+            url = url_path_join(self.warehouse_path, self.table_name) + '/'
+        return ExternalURL(url)
 
     @property
     def table(self):
@@ -80,11 +87,6 @@ class LoadInsightsTableToVertica(WarehouseMixin, VerticaCopyTaskMixin, luigi.Wra
         }
         yield (
             LoadHiveTableToVertica(
-                table_name='answer_distribution',
-                column_list=AnswerDistributionRecord.get_sql_schema(),
-                **kwargs
-            ),
-            LoadHiveTableToVertica(
                 table_name='course_activity',
                 column_list=CourseActivityRecord.get_sql_schema(),
                 **kwargs
@@ -126,12 +128,8 @@ class LoadInsightsTableToVertica(WarehouseMixin, VerticaCopyTaskMixin, luigi.Wra
             ),
             LoadHiveTableToVertica(
                 table_name='course_enrollment_location_current',
+                load_data_from_partition=False,
                 column_list=LastCountryPerCourseRecord.get_sql_schema(),
-                **kwargs
-            ),
-            LoadHiveTableToVertica(
-                table_name='last_country_of_user',
-                column_list=LastCountryOfUserRecord.get_sql_schema(),
                 **kwargs
             ),
             LoadHiveTableToVertica(
