@@ -9,12 +9,14 @@ import luigi
 from edx.analytics.tasks.common.vertica_load import VerticaCopyTask, VerticaCopyTaskMixin
 from edx.analytics.tasks.enterprise.enterprise_enrollments import EnterpriseEnrollmentRecord
 from edx.analytics.tasks.enterprise.enterprise_user import EnterpriseUserRecord
-from edx.analytics.tasks.insights.enrollments import EnrollmentDailyRecord, EnrollmentByBirthYearRecord, \
-    EnrollmentByEducationLevelRecord, EnrollmentByGenderRecord, EnrollmentByModeRecord, CourseSummaryEnrollmentRecord, \
-    CourseProgramMetadataRecord
+from edx.analytics.tasks.insights.enrollments import (
+    CourseProgramMetadataRecord, CourseSummaryEnrollmentRecord, EnrollmentByBirthYearRecord,
+    EnrollmentByEducationLevelRecord, EnrollmentByGenderRecord, EnrollmentByModeRecord, EnrollmentDailyRecord
+)
 from edx.analytics.tasks.insights.location_per_course import LastCountryPerCourseRecord
-from edx.analytics.tasks.insights.module_engagement import ModuleEngagementRecord, \
-    ModuleEngagementSummaryMetricRangeRecord
+from edx.analytics.tasks.insights.module_engagement import (
+    ModuleEngagementRecord, ModuleEngagementSummaryMetricRangeRecord
+)
 from edx.analytics.tasks.insights.user_activity import CourseActivityRecord
 from edx.analytics.tasks.util.hive import WarehouseMixin
 from edx.analytics.tasks.util.url import ExternalURL, url_path_join
