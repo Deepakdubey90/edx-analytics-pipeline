@@ -3,9 +3,11 @@ Loads multiple insights tables into the warehouse through the pipeline via Hive.
 """
 import datetime
 import logging
+import os
 
 import luigi
 
+from edx.analytics.tasks.common.pathutil import PathSetTask
 from edx.analytics.tasks.common.vertica_load import VerticaCopyTask, VerticaCopyTaskMixin
 from edx.analytics.tasks.enterprise.enterprise_enrollments import EnterpriseEnrollmentRecord
 from edx.analytics.tasks.enterprise.enterprise_user import EnterpriseUserRecord
@@ -39,6 +41,18 @@ class LoadHiveTableToVertica(WarehouseMixin, VerticaCopyTask):
         default=True,
         description='Boolean to indicate if data will be loaded from hive partition.'
     )
+
+    def __init__(self, *args, **kwargs):
+        super(LoadHiveTableToVertica, self).__init__(*args, **kwargs)
+        # Find the most recent data for the source if load from partition is enabled.
+        if self.load_data_from_partition:
+            path = url_path_join(self.warehouse_path, self.table_name)
+            path_targets = PathSetTask([path]).output()
+            paths = list(set([os.path.dirname(target.path) for target in path_targets]))
+            dates = [path.rsplit('/', 2)[-1] for path in paths]
+            latest_date = sorted(dates)[-1]
+            self.date = datetime.datetime.strptime(latest_date, "dt=%Y-%m-%d").date()
+            log.debug('Loading data for table %s from partition %s', self.table_name, self.date)
 
     @property
     def insert_source_task(self):
